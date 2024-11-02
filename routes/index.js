@@ -7,6 +7,22 @@ const router = express.Router();
 
 const filePath = path.join(__dirname, '../public/gameBoard.txt');
 
+// Função para verificar e remover itens antigos (mais de 5 minutos)
+function removeOldEntries(data) {
+  const currentTime = Date.now();
+  const fiveMinutes = 5 * 60 * 1000;
+
+  // Filtra as linhas que estão dentro do período de 5 minutos
+  return data
+    .trim()
+    .split('\n')
+    .filter(line => {
+      const [nickname, id, timestamp] = line.split(',');
+      return currentTime - Number(timestamp) <= fiveMinutes;
+    })
+    .join('\n');
+}
+
 // Rota para cadastrar um novo usuário
 router.get('/cadastro', (req, res) => {
   const { nickname, id } = req.query;
@@ -15,13 +31,26 @@ router.get('/cadastro', (req, res) => {
     return res.status(400).json({ message: 'Nickname e ID são obrigatórios' });
   }
 
-  // Adiciona a nova linha ao arquivo
-  const newEntry = `${nickname},${id}\n`;
-  fs.appendFile(filePath, newEntry, (err) => {
+  const currentTime = Date.now();
+
+  fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
-      return res.status(500).json({ message: 'Erro ao salvar o cadastro' });
+      return res.status(500).json({ message: 'Erro ao ler o arquivo' });
     }
-    res.status(201).json({ message: 'Cadastro realizado com sucesso' });
+
+    // Remove itens antigos com mais de 5 minutos
+    const updatedData = removeOldEntries(data);
+
+    // Adiciona o novo registro com timestamp
+    const newEntry = `${nickname},${id},${currentTime}\n`;
+    const newData = updatedData + '\n' + newEntry;
+
+    fs.writeFile(filePath, newData.trim(), err => {
+      if (err) {
+        return res.status(500).json({ message: 'Erro ao salvar o cadastro' });
+      }
+      res.status(201).json({ message: 'Cadastro realizado com sucesso' });
+    });
   });
 });
 
@@ -33,7 +62,6 @@ router.get('/delete', (req, res) => {
     return res.status(400).json({ message: 'ID é obrigatório' });
   }
 
-  // Lê o arquivo e remove a linha com o ID especificado
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
       return res.status(500).json({ message: 'Erro ao ler o arquivo' });
@@ -46,8 +74,7 @@ router.get('/delete', (req, res) => {
       return res.status(404).json({ message: 'ID não encontrado' });
     }
 
-    // Reescreve o arquivo com as linhas restantes
-    fs.writeFile(filePath, updatedLines.join('\n'), (err) => {
+    fs.writeFile(filePath, updatedLines.join('\n'), err => {
       if (err) {
         return res.status(500).json({ message: 'Erro ao deletar o cadastro' });
       }
@@ -63,17 +90,26 @@ router.get('/buscar', (req, res) => {
       return res.status(500).json({ message: 'Erro ao ler o arquivo' });
     }
 
-    // Formata cada linha em um objeto JSON
     const users = data
       .trim()
       .split('\n')
-      .filter(line => line) // Ignora linhas vazias
+      .filter(line => line)
       .map(line => {
-        const [nickname, id] = line.split(',');
-        return { nickname, id };
+        const [nickname, id, timestamp] = line.split(',');
+        return { nickname, id, timestamp };
       });
 
     res.status(200).json(users);
+  });
+});
+
+// Rota para excluir todos os registros
+router.get('/deleteAll', (req, res) => {
+  fs.writeFile(filePath, '', err => {
+    if (err) {
+      return res.status(500).json({ message: 'Erro ao deletar todos os registros' });
+    }
+    res.status(200).json({ message: 'Todos os registros foram excluídos com sucesso' });
   });
 });
 
