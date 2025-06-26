@@ -1,0 +1,121 @@
+{
+  "terror-story1": {
+    "id": "terror-story1",
+    "title": "A Mansão Amaldiçoada",
+    "image": "https://images.unsplash.com/photo-1509248961158-e54f6934749c",
+    "description": "Uma mansão abandonada com segredos sombrios...",
+    "starting_scene": "terror1"
+  },
+  "terror-story2": {
+    "id": "terror-story2",
+    "title": "O Sítio do Pavor",
+    "image": "https://images.unsplash.com/photo-1558223631-419b45e7e9f3",
+    "description": "Uma noite no sítio que te fará duvidar da sua sanidade...",
+    "starting_scene": "terror4"
+  },
+  "terror-scene-terror1": {
+    "id": "terror1",
+    "image": "https://images.unsplash.com/photo-1509248961158-e54f6934749c",
+    "text": "Você está na entrada da Mansão Blackwood. A porta da frente está entreaberta.",
+    "options": [
+      {
+        "text": "Entrar pela porta da frente",
+        "next_scene": "terror2"
+      },
+      {
+        "text": "Procurar outra entrada na lateral da casa",
+        "next_scene": "terror3"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "terror-scene-terror2": {
+    "id": "terror2",
+    "image": "https://images.unsplash.com/photo-1593922634358-0010c7322d7c",
+    "text": "O hall de entrada está empoeirado e sinistro. Você ouve um sussurro no andar de cima.",
+    "options": [
+      {
+        "text": "Subir as escadas para investigar",
+        "next_scene": "terror5"
+      },
+      {
+        "text": "Ignorar e ir para a cozinha",
+        "next_scene": "terror-end1"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "terror-scene-terror-end1": {
+    "id": "terror-end1",
+    "image": "https://images.unsplash.com/photo-1528695026901-7917e76161a0",
+    "text": "A cozinha está repleta de moscas. Você sente uma presença atrás de você, mas é tarde demais. Fim da história.",
+    "options": [],
+    "is_end": true,
+    "end_reason": "Você foi capturado!"
+  },
+  "terror-scene-terror3": {
+    "id": "terror3",
+    "image": "https://images.unsplash.com/photo-1517454045610-d326f4f2c00d",
+    "text": "Você encontra uma janela aberta. Ao entrar, o cheiro de mofo é forte. O silêncio é ensurdecedor.",
+    "options": [
+      {
+        "text": "Ir para o andar de cima",
+        "next_scene": "terror5"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "terror-scene-terror4": {
+    "id": "terror4",
+    "image": "https://images.unsplash.com/photo-1558223631-419b45e7e9f3",
+    "text": "A noite caiu e o sítio está coberto por uma névoa. Você ouve o guincho distante de um porco.",
+    "options": [
+      {
+        "text": "Seguir o som do guincho",
+        "next_scene": "terror-end2"
+      },
+      {
+        "text": "Ir para o celeiro",
+        "next_scene": "terror-end3"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "terror-scene-terror-end2": {
+    "id": "terror-end2",
+    "image": "https://images.unsplash.com/photo-1596752044342-9f37c44d0b1a",
+    "text": "Você segue o som e se depara com a criatura que o emite. O horror é indescritível. Fim da história.",
+    "options": [],
+    "is_end": true,
+    "end_reason": "Você encontrou a criatura!"
+  },
+  "terror-scene-terror-end3": {
+    "id": "terror-end3",
+    "image": "https://images.unsplash.com/photo-1558223631-419b45e7e9f3",
+    "text": "O celeiro está abandonado. Você encontra uma antiga escotilha. Fim da história.",
+    "options": [],
+    "is_end": true,
+    "end_reason": "Você encontrou uma saída!"
+  },
+  "terror-scene-terror5": {
+    "id": "terror5",
+    "image": "https://images.unsplash.com/photo-1598424265738-9e663a890885",
+    "text": "No topo da escada, a porta de um quarto se abre lentamente. Um vulto aparece na escuridão.",
+    "options": [
+      {
+        "text": "Correr para o quarto",
+        "next_scene": "terror-end1"
+      },
+      {
+        "text": "Correr de volta para a saída",
+        "next_scene": "terror-end2"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  }
+}
