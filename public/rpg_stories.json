@@ -1,0 +1,96 @@
+{
+  "rpg-story1": {
+    "id": "rpg-story1",
+    "title": "A Maldição do Rei Esqueleto",
+    "image": "https://images.unsplash.com/photo-1518709766631-a6a7f45921c3",
+    "description": "Um antigo rei amaldiçoado desperta...",
+    "starting_scene": "rpg1"
+  },
+  "rpg-story2": {
+    "id": "rpg-story2",
+    "title": "O Orbe dos Dragões",
+    "image": "https://images.unsplash.com/photo-1589656966895-2f33e7653819",
+    "description": "Uma relíquia capaz de controlar dragões...",
+    "starting_scene": "rpg4"
+  },
+  "rpg-scene-rpg1": {
+    "id": "rpg1",
+    "image": "https://images.unsplash.com/photo-1589254065878-42c9da997008",
+    "text": "Você está na entrada da Caverna dos Mistérios...",
+    "options": [
+      {
+        "text": "Entrar cautelosamente, mantendo silêncio",
+        "next_scene": "rpg2"
+      },
+      {
+        "text": "Acender uma segunda tocha para melhor iluminação",
+        "next_scene": "rpg3"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "rpg-scene-rpg2": {
+    "id": "rpg2",
+    "image": "https://images.unsplash.com/photo-1579292237894-6d9b9c9f2b8f",
+    "text": "Você entra em uma câmara escura. Um eco assustador ecoa pelas paredes.",
+    "options": [
+      {
+        "text": "Investigar a fonte do eco",
+        "next_scene": "rpg5"
+      },
+      {
+        "text": "Voltar para a entrada",
+        "next_scene": "rpg1"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "rpg-scene-rpg3": {
+    "id": "rpg3",
+    "image": "https://images.unsplash.com/photo-1596752044342-9f37c44d0b1a",
+    "text": "A luz da segunda tocha revela uma armadilha no chão! Você consegue evitá-la a tempo.",
+    "options": [
+      {
+        "text": "Continuar pela passagem principal",
+        "next_scene": "rpg2"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "rpg-scene-rpg4": {
+    "id": "rpg4",
+    "image": "https://images.unsplash.com/photo-1589656966895-2f33e7653819",
+    "text": "Você se encontra na torre mais alta do Castelo de Aethelgard. Diante de você, o Orbe dos Dragões.",
+    "options": [
+      {
+        "text": "Tentar pegar o orbe",
+        "next_scene": "rpg-end1"
+      },
+      {
+        "text": "Estudar o orbe de longe",
+        "next_scene": "rpg-end2"
+      }
+    ],
+    "is_end": false,
+    "end_reason": null
+  },
+  "rpg-scene-rpg-end1": {
+    "id": "rpg-end1",
+    "image": "https://images.unsplash.com/photo-1614995574765-c7e63b65a58e",
+    "text": "Ao tocar o orbe, uma luz ofuscante te consome. Você agora controla os dragões, mas pagou um preço terrível. Fim da aventura.",
+    "options": [],
+    "is_end": true,
+    "end_reason": "Você controlou os dragões!"
+  },
+  "rpg-scene-rpg-end2": {
+    "id": "rpg-end2",
+    "image": "https://images.unsplash.com/photo-1549449069-425881900140",
+    "text": "Você decide que o poder do orbe é grande demais para ser manuseado. Sua prudência salvou o reino. Fim da aventura.",
+    "options": [],
+    "is_end": true,
+    "end_reason": "Você salvou o reino!"
+  }
+}
