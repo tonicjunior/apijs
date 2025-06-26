@@ -55,7 +55,7 @@ function removeOldEntries(data) {
 
 // --- Existing Routes ---
 
-// Route to register a new user
+// Rota para cadastrar um novo usuário
 router.get('/cadastro', (req, res) => {
   const { nickname, id } = req.query;
 
@@ -66,7 +66,7 @@ router.get('/cadastro', (req, res) => {
   const currentTime = Date.now();
 
   fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err && err.code !== 'ENOENT') { // ENOENT means file does not exist, which is fine
+    if (err && err.code !== 'ENOENT') {
       return res.status(500).json({ message: 'Erro ao ler o arquivo' });
     }
 
@@ -85,7 +85,7 @@ router.get('/cadastro', (req, res) => {
   });
 });
 
-// Route to delete a user by ID
+// Rota para deletar um usuário pelo ID
 router.get('/delete', (req, res) => {
   const { id } = req.query;
 
@@ -114,7 +114,7 @@ router.get('/delete', (req, res) => {
   });
 });
 
-// Route to fetch all data
+// Rota para buscar todos os dados
 router.get('/buscar', (req, res) => {
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
@@ -134,7 +134,7 @@ router.get('/buscar', (req, res) => {
   });
 });
 
-// Route to delete all records
+// Rota para excluir todos os registros
 router.get('/deleteAll', (req, res) => {
   fs.writeFile(filePath, '', err => {
     if (err) {
@@ -176,7 +176,7 @@ router.get('/api/themes', (req, res) => {
 
 /**
  * Rota: /api/stories?theme={theme_id}
- * Returns the available stories for a specific theme.
+ * Returns the available stories and their full scene structure for a specific theme.
  */
 router.get('/api/stories', async (req, res) => {
   const { theme } = req.query;
@@ -193,11 +193,10 @@ router.get('/api/stories', async (req, res) => {
 
   try {
     const storiesData = await readJsonFile(storiesPath);
-    // Filter out only the stories from the JSON data
-    const stories = Object.values(storiesData).filter(item => item.id.includes('-story'));
+    // storiesData is now an array of story objects
     res.status(200).json({
       success: true,
-      data: stories
+      data: storiesData
     });
   } catch (error) {
     console.error('Erro ao ler o arquivo de histórias:', error);
@@ -205,40 +204,6 @@ router.get('/api/stories', async (req, res) => {
   }
 });
 
-/**
- * Rota: /api/scenes?theme={theme_id}&scene_id={scene_id}
- * Returns the data for a specific scene.
- */
-router.get('/api/scenes', async (req, res) => {
-  const { theme, scene_id } = req.query;
-
-  if (!theme || !scene_id) {
-    return res.status(400).json({ success: false, message: 'Os parâmetros "theme" e "scene_id" são obrigatórios.' });
-  }
-
-  const storiesPath = theme === 'rpg' ? rpgStoriesPath : (theme === 'terror' ? terrorStoriesPath : null);
-
-  if (!storiesPath) {
-    return res.status(404).json({ success: false, message: 'Tema não encontrado.' });
-  }
-
-  try {
-    const storiesData = await readJsonFile(storiesPath);
-    const sceneKey = `${theme}-scene-${scene_id}`;
-    const scene = storiesData[sceneKey];
-
-    if (!scene) {
-      return res.status(404).json({ success: false, message: 'Cena não encontrada.' });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: scene
-    });
-  } catch (error) {
-    console.error('Erro ao ler o arquivo de cenas:', error);
-    res.status(500).json({ success: false, message: 'Erro ao carregar a cena.' });
-  }
-});
+// The /api/scenes route has been removed.
 
 module.exports = router;
