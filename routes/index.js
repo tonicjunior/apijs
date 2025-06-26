@@ -6,8 +6,8 @@ const fs = require('fs');
 const router = express.Router();
 
 const filePath = path.join(__dirname, '../public/gameBoard.txt');
-const rpgStoriesPath = path.join(__dirname, '../data/rpg_stories.json');
-const terrorStoriesPath = path.join(__dirname, '../data/terror_stories.json');
+const rpgStoriesPath = path.join(__dirname, '../public/rpg_stories.json');
+const terrorStoriesPath = path.join(__dirname, '../public/terror_stories.json');
 
 // --- Helper Functions ---
 /**
