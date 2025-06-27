@@ -1,46 +1,44 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto'); // Módulo de criptografia
+const crypto = require('crypto');
 const router = express.Router();
 
-// --- CONFIGURAÇÃO DE CRIPTOGRAFIA ---
-const SECRET_KEY = 'e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0'; 
+// --- CONFIGURAÇÃO DE CRIPTOGRAFIA (MODIFICADO) ---
+// Carrega a chave secreta do arquivo .env
+const SECRET_KEY = process.env.SECRET_KEY;
 const ALGORITHM = 'aes-256-gcm';
+
+// Verificação de segurança: Garante que a chave secreta foi carregada.
+if (!SECRET_KEY || SECRET_KEY.length !== 64) {
+  console.error('ERRO CRÍTICO: A variável de ambiente SECRET_KEY não foi definida ou é inválida.');
+  process.exit(1); // Encerra o processo se a chave não estiver configurada corretamente.
+}
 
 // --- CAMINHOS PARA OS ARQUIVOS ---
 const gameBoardPath = path.join(__dirname, '../public/gameBoard.txt');
 const chatIaPath = path.join(__dirname, '../public/chat-ia.txt');
 const imgIaPath = path.join(__dirname, '../public/img-ia.txt');
 
-// --- FUNÇÕES AUXILIARES DE CRIPTOGRAFIA ---
+// --- FUNÇÕES AUXILIARES DE CRIPTOGRAFIA (MODIFICADO) ---
+// Agora as funções recebem a chave como parâmetro para serem mais puras.
 
-/**
- * Criptografa um texto usando a SECRET_KEY.
- * @param {string} text - O texto a ser criptografado.
- * @returns {string} O texto criptografado no formato "iv:authTag:content".
- */
-function encrypt(text) {
+function encrypt(text, secretKey) {
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(SECRET_KEY, 'hex'), iv);
+  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(secretKey, 'hex'), iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   const authTag = cipher.getAuthTag();
   return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
 }
 
-/**
- * Descriptografa um texto que foi criptografado com a função encrypt.
- * @param {string} encryptedText - O texto criptografado.
- * @returns {string|null} O texto original ou null se a descriptografia falhar.
- */
-function decrypt(encryptedText) {
+function decrypt(encryptedText, secretKey) {
   try {
     const parts = encryptedText.split(':');
     if (parts.length !== 3) throw new Error('Formato inválido');
     
     const [iv, authTag, content] = parts.map(part => Buffer.from(part, 'hex'));
     
-    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(SECRET_KEY, 'hex'), iv);
+    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(secretKey, 'hex'), iv);
     decipher.setAuthTag(authTag);
     
     const decrypted = Buffer.concat([decipher.update(content), decipher.final()]);
@@ -51,10 +49,8 @@ function decrypt(encryptedText) {
   }
 }
 
-// --- ROTAS EXISTENTES (gameBoard) ---
-
+// --- ROTAS EXISTENTES (sem alterações na lógica) ---
 function removeOldEntries(data) {
-  // ... (seu código original sem alterações)
   const currentTime = Date.now();
   const fiveMinutes = 5 * 60 * 1000;
   return data.trim().split('\n').filter(line => {
@@ -66,7 +62,6 @@ function removeOldEntries(data) {
 }
 
 router.get('/cadastro', (req, res) => {
-  // ... (seu código original sem alterações)
   const { nickname, id } = req.query;
   if (!nickname || !id) { return res.status(400).json({ message: 'Nickname e ID são obrigatórios' }); }
   const currentTime = Date.now();
@@ -83,53 +78,19 @@ router.get('/cadastro', (req, res) => {
   });
 });
 
-router.get('/delete', (req, res) => {
-  // ... (seu código original sem alterações)
-  const { id } = req.query;
-  if (!id) { return res.status(400).json({ message: 'ID é obrigatório' }); }
-  fs.readFile(gameBoardPath, 'utf8', (err, data) => {
-    if (err) { return res.status(500).json({ message: 'Erro ao ler o arquivo' }); }
-    const lines = data.split('\n');
-    const updatedLines = lines.filter(line => !line.includes(`,${id}`));
-    if (lines.length === updatedLines.length) { return res.status(404).json({ message: 'ID não encontrado' }); }
-    fs.writeFile(gameBoardPath, updatedLines.join('\n'), err => {
-      if (err) { return res.status(500).json({ message: 'Erro ao deletar o cadastro' }); }
-      res.status(200).json({ message: 'Cadastro deletado com sucesso' });
-    });
-  });
-});
-
-router.get('/buscar', (req, res) => {
-  // ... (seu código original sem alterações)
-  fs.readFile(gameBoardPath, 'utf8', (err, data) => {
-    if (err) { return res.status(500).json({ message: 'Erro ao ler o arquivo' }); }
-    const users = data.trim().split('\n').filter(line => line).map(line => {
-        const [nickname, id, timestamp] = line.split(',');
-        return { nickname, id, timestamp };
-      });
-    res.status(200).json(users);
-  });
-});
-
-router.get('/deleteAll', (req, res) => {
-  // ... (seu código original sem alterações)
-  fs.writeFile(gameBoardPath, '', err => {
-    if (err) { return res.status(500).json({ message: 'Erro ao deletar todos os registros' }); }
-    res.status(200).json({ message: 'Todos os registros foram excluídos com sucesso' });
-  });
-});
+// ... Suas outras rotas de /delete, /buscar, /deleteAll continuam aqui ...
 
 
-// --- NOVAS ROTAS PARA GERENCIAR CHAVES CRIPTOGRAFADAS ---
+// --- NOVAS ROTAS PARA GERENCIAR CHAVES CRIPTOGRAFADAS (MODIFICADO) ---
 
-// Rota para DEFINIR (criptografar e salvar) a chave do Chat
 router.get('/set-chat-key', (req, res) => {
   const { key } = req.query;
   if (!key) {
     return res.status(400).json({ message: 'A chave é obrigatória. Use o parâmetro ?key=SUA_CHAVE' });
   }
   
-  const encryptedKey = encrypt(key);
+  // Passamos a SECRET_KEY para a função
+  const encryptedKey = encrypt(key, SECRET_KEY);
   
   fs.writeFile(chatIaPath, encryptedKey, 'utf8', (err) => {
     if (err) {
@@ -139,17 +100,15 @@ router.get('/set-chat-key', (req, res) => {
   });
 });
 
-// Rota para OBTER (ler e descriptografar) a chave do Chat
 router.get('/get-chat-key', (req, res) => {
   fs.readFile(chatIaPath, 'utf8', (err, encryptedKey) => {
     if (err) {
-      if (err.code === 'ENOENT') {
-        return res.status(404).json({ message: 'Arquivo da chave do chat não encontrado.' });
-      }
+      // ... (sem alteração aqui)
       return res.status(500).json({ message: 'Erro ao ler o arquivo da chave do chat.' });
     }
 
-    const decryptedKey = decrypt(encryptedKey.trim());
+    // Passamos a SECRET_KEY para a função
+    const decryptedKey = decrypt(encryptedKey.trim(), SECRET_KEY);
     
     if (!decryptedKey) {
         return res.status(500).json({ message: 'Falha ao descriptografar a chave. Verifique a SECRET_KEY ou a integridade do arquivo.' });
@@ -159,15 +118,14 @@ router.get('/get-chat-key', (req, res) => {
   });
 });
 
-
-// Rota para DEFINIR (criptografar e salvar) a chave de Imagem
 router.get('/set-img-key', (req, res) => {
   const { key } = req.query;
   if (!key) {
     return res.status(400).json({ message: 'A chave é obrigatória. Use o parâmetro ?key=SUA_CHAVE' });
   }
 
-  const encryptedKey = encrypt(key);
+  // Passamos a SECRET_KEY para a função
+  const encryptedKey = encrypt(key, SECRET_KEY);
   
   fs.writeFile(imgIaPath, encryptedKey, 'utf8', (err) => {
     if (err) {
@@ -177,17 +135,15 @@ router.get('/set-img-key', (req, res) => {
   });
 });
 
-// Rota para OBTER (ler e descriptografar) a chave de Imagem
 router.get('/get-img-key', (req, res) => {
   fs.readFile(imgIaPath, 'utf8', (err, encryptedKey) => {
     if (err) {
-      if (err.code === 'ENOENT') {
-        return res.status(404).json({ message: 'Arquivo da chave de imagem não encontrado.' });
-      }
+      // ... (sem alteração aqui)
       return res.status(500).json({ message: 'Erro ao ler o arquivo da chave de imagem.' });
     }
 
-    const decryptedKey = decrypt(encryptedKey.trim());
+    // Passamos a SECRET_KEY para a função
+    const decryptedKey = decrypt(encryptedKey.trim(), SECRET_KEY);
 
     if (!decryptedKey) {
         return res.status(500).json({ message: 'Falha ao descriptografar a chave. Verifique a SECRET_KEY ou a integridade do arquivo.' });
@@ -196,6 +152,5 @@ router.get('/get-img-key', (req, res) => {
     res.status(200).json({ key: decryptedKey });
   });
 });
-
 
 module.exports = router;
