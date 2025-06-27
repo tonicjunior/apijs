@@ -1,209 +1,201 @@
-// routes/index.js
-
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto'); // Módulo de criptografia
 const router = express.Router();
 
-const filePath = path.join(__dirname, '../public/gameBoard.txt');
-const rpgStoriesPath = path.join(__dirname, '../public/rpg_stories.json');
-const terrorStoriesPath = path.join(__dirname, '../public/terror_stories.json');
+// --- CONFIGURAÇÃO DE CRIPTOGRAFIA ---
+const SECRET_KEY = 'e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0'; // Use esta chave para ambas as operações
+const ALGORITHM = 'aes-256-gcm';
 
-// --- Helper Functions ---
+// --- CAMINHOS PARA OS ARQUIVOS ---
+const gameBoardPath = path.join(__dirname, '../public/gameBoard.txt');
+const chatIaPath = path.join(__dirname, '../public/chat-ia.txt');
+const imgIaPath = path.join(__dirname, '../public/img-ia.txt');
+
+// --- FUNÇÕES AUXILIARES DE CRIPTOGRAFIA ---
+
 /**
- * Reads a JSON file asynchronously and returns its content.
- * @param {string} filePath - The path to the JSON file.
- * @returns {Promise<object>} A promise that resolves with the JSON data.
+ * Criptografa um texto usando a SECRET_KEY.
+ * @param {string} text - O texto a ser criptografado.
+ * @returns {string} O texto criptografado no formato "iv:authTag:content".
  */
-function readJsonFile(filePath) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(filePath, 'utf8', (err, data) => {
-      if (err) {
-        return reject(err);
-      }
-      try {
-        const jsonData = JSON.parse(data);
-        resolve(jsonData);
-      } catch (parseError) {
-        reject(parseError);
-      }
-    });
-  });
+function encrypt(text) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(SECRET_KEY, 'hex'), iv);
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
 }
 
 /**
- * Removes old entries from the game board data.
- * @param {string} data - The raw data from the game board file.
- * @returns {string} The data with old entries removed.
+ * Descriptografa um texto que foi criptografado com a função encrypt.
+ * @param {string} encryptedText - O texto criptografado.
+ * @returns {string|null} O texto original ou null se a descriptografia falhar.
  */
-function removeOldEntries(data) {
-  const currentTime = Date.now();
-  const fiveMinutes = 5 * 60 * 1000;
-
-  // Filters lines to keep only those within the 5-minute window
-  return data
-    .trim()
-    .split('\n')
-    .filter(line => {
-      const parts = line.split(',');
-      if (parts.length !== 3) return false; // Skips malformed lines
-      const [nickname, id, timestamp] = parts;
-      return currentTime - Number(timestamp) <= fiveMinutes;
-    })
-    .join('\n');
-}
-
-// --- Existing Routes ---
-
-// Rota para cadastrar um novo usuário
-router.get('/cadastro', (req, res) => {
-  const { nickname, id } = req.query;
-
-  if (!nickname || !id) {
-    return res.status(400).json({ message: 'Nickname e ID são obrigatórios' });
-  }
-
-  const currentTime = Date.now();
-
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err && err.code !== 'ENOENT') {
-      return res.status(500).json({ message: 'Erro ao ler o arquivo' });
-    }
-
-    const fileData = data || '';
-    const updatedData = removeOldEntries(fileData);
-
-    const newEntry = `${nickname},${id},${currentTime}\n`;
-    const newData = updatedData ? updatedData + '\n' + newEntry : newEntry;
-
-    fs.writeFile(filePath, newData.trim(), err => {
-      if (err) {
-        return res.status(500).json({ message: 'Erro ao salvar o cadastro' });
-      }
-      res.status(201).json({ message: 'Cadastro realizado com sucesso' });
-    });
-  });
-});
-
-// Rota para deletar um usuário pelo ID
-router.get('/delete', (req, res) => {
-  const { id } = req.query;
-
-  if (!id) {
-    return res.status(400).json({ message: 'ID é obrigatório' });
-  }
-
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(500).json({ message: 'Erro ao ler o arquivo' });
-    }
-
-    const lines = data.split('\n');
-    const updatedLines = lines.filter(line => !line.includes(`,${id}`));
-
-    if (lines.length === updatedLines.length) {
-      return res.status(404).json({ message: 'ID não encontrado' });
-    }
-
-    fs.writeFile(filePath, updatedLines.join('\n'), err => {
-      if (err) {
-        return res.status(500).json({ message: 'Erro ao deletar o cadastro' });
-      }
-      res.status(200).json({ message: 'Cadastro deletado com sucesso' });
-    });
-  });
-});
-
-// Rota para buscar todos os dados
-router.get('/buscar', (req, res) => {
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(500).json({ message: 'Erro ao ler o arquivo' });
-    }
-
-    const users = data
-      .trim()
-      .split('\n')
-      .filter(line => line)
-      .map(line => {
-        const [nickname, id, timestamp] = line.split(',');
-        return { nickname, id, timestamp };
-      });
-
-    res.status(200).json(users);
-  });
-});
-
-// Rota para excluir todos os registros
-router.get('/deleteAll', (req, res) => {
-  fs.writeFile(filePath, '', err => {
-    if (err) {
-      return res.status(500).json({ message: 'Erro ao deletar todos os registros' });
-    }
-    res.status(200).json({ message: 'Todos os registros foram excluídos com sucesso' });
-  });
-});
-
-// --- New API Routes ---
-
-/**
- * Rota: /api/themes
- * Returns the available themes (RPG and Horror in this case).
- */
-router.get('/api/themes', (req, res) => {
-  const themes = [
-    {
-      id: 'rpg',
-      name: 'ÉPICA AVENTURA',
-      description: 'Entre em um mundo de magia e perigo...',
-      image: 'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3',
-      button_text: 'ESCOLHER DESTINO'
-    },
-    {
-      id: 'terror',
-      name: 'HORROR PROFUNDO',
-      description: 'Enfrente seus piores medos...',
-      image: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c',
-      button_text: 'ABRAÇAR O MEDO'
-    }
-  ];
-
-  res.status(200).json({
-    success: true,
-    data: themes
-  });
-});
-
-/**
- * Rota: /api/stories?theme={theme_id}
- * Returns the available stories and their full scene structure for a specific theme.
- */
-router.get('/api/stories', async (req, res) => {
-  const { theme } = req.query;
-
-  if (!theme) {
-    return res.status(400).json({ success: false, message: 'O parâmetro "theme" é obrigatório.' });
-  }
-
-  const storiesPath = theme === 'rpg' ? rpgStoriesPath : (theme === 'terror' ? terrorStoriesPath : null);
-
-  if (!storiesPath) {
-    return res.status(404).json({ success: false, message: 'Tema não encontrado.' });
-  }
-
+function decrypt(encryptedText) {
   try {
-    const storiesData = await readJsonFile(storiesPath);
-    // storiesData is now an array of story objects
-    res.status(200).json({
-      success: true,
-      data: storiesData
-    });
+    const parts = encryptedText.split(':');
+    if (parts.length !== 3) throw new Error('Formato inválido');
+    
+    const [iv, authTag, content] = parts.map(part => Buffer.from(part, 'hex'));
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(SECRET_KEY, 'hex'), iv);
+    decipher.setAuthTag(authTag);
+    
+    const decrypted = Buffer.concat([decipher.update(content), decipher.final()]);
+    return decrypted.toString('utf8');
   } catch (error) {
-    console.error('Erro ao ler o arquivo de histórias:', error);
-    res.status(500).json({ success: false, message: 'Erro ao carregar as histórias.' });
+    console.error("Erro na descriptografia:", error);
+    return null;
   }
+}
+
+// --- ROTAS EXISTENTES (gameBoard) ---
+
+function removeOldEntries(data) {
+  // ... (seu código original sem alterações)
+  const currentTime = Date.now();
+  const fiveMinutes = 5 * 60 * 1000;
+  return data.trim().split('\n').filter(line => {
+      const parts = line.split(',');
+      if (parts.length !== 3) return false;
+      const [nickname, id, timestamp] = parts;
+      return currentTime - Number(timestamp) <= fiveMinutes;
+    }).join('\n');
+}
+
+router.get('/cadastro', (req, res) => {
+  // ... (seu código original sem alterações)
+  const { nickname, id } = req.query;
+  if (!nickname || !id) { return res.status(400).json({ message: 'Nickname e ID são obrigatórios' }); }
+  const currentTime = Date.now();
+  fs.readFile(gameBoardPath, 'utf8', (err, data) => {
+    if (err && err.code !== 'ENOENT') { return res.status(500).json({ message: 'Erro ao ler o arquivo' }); }
+    const fileData = data || '';
+    const updatedData = removeOldEntries(fileData);
+    const newEntry = `${nickname},${id},${currentTime}\n`;
+    const newData = updatedData ? updatedData + '\n' + newEntry : newEntry;
+    fs.writeFile(gameBoardPath, newData.trim(), err => {
+      if (err) { return res.status(500).json({ message: 'Erro ao salvar o cadastro' }); }
+      res.status(201).json({ message: 'Cadastro realizado com sucesso' });
+    });
+  });
 });
 
-// The /api/scenes route has been removed.
+router.get('/delete', (req, res) => {
+  // ... (seu código original sem alterações)
+  const { id } = req.query;
+  if (!id) { return res.status(400).json({ message: 'ID é obrigatório' }); }
+  fs.readFile(gameBoardPath, 'utf8', (err, data) => {
+    if (err) { return res.status(500).json({ message: 'Erro ao ler o arquivo' }); }
+    const lines = data.split('\n');
+    const updatedLines = lines.filter(line => !line.includes(`,${id}`));
+    if (lines.length === updatedLines.length) { return res.status(404).json({ message: 'ID não encontrado' }); }
+    fs.writeFile(gameBoardPath, updatedLines.join('\n'), err => {
+      if (err) { return res.status(500).json({ message: 'Erro ao deletar o cadastro' }); }
+      res.status(200).json({ message: 'Cadastro deletado com sucesso' });
+    });
+  });
+});
+
+router.get('/buscar', (req, res) => {
+  // ... (seu código original sem alterações)
+  fs.readFile(gameBoardPath, 'utf8', (err, data) => {
+    if (err) { return res.status(500).json({ message: 'Erro ao ler o arquivo' }); }
+    const users = data.trim().split('\n').filter(line => line).map(line => {
+        const [nickname, id, timestamp] = line.split(',');
+        return { nickname, id, timestamp };
+      });
+    res.status(200).json(users);
+  });
+});
+
+router.get('/deleteAll', (req, res) => {
+  // ... (seu código original sem alterações)
+  fs.writeFile(gameBoardPath, '', err => {
+    if (err) { return res.status(500).json({ message: 'Erro ao deletar todos os registros' }); }
+    res.status(200).json({ message: 'Todos os registros foram excluídos com sucesso' });
+  });
+});
+
+
+// --- NOVAS ROTAS PARA GERENCIAR CHAVES CRIPTOGRAFADAS ---
+
+// Rota para DEFINIR (criptografar e salvar) a chave do Chat
+router.get('/set-chat-key', (req, res) => {
+  const { key } = req.query;
+  if (!key) {
+    return res.status(400).json({ message: 'A chave é obrigatória. Use o parâmetro ?key=SUA_CHAVE' });
+  }
+  
+  const encryptedKey = encrypt(key);
+  
+  fs.writeFile(chatIaPath, encryptedKey, 'utf8', (err) => {
+    if (err) {
+      return res.status(500).json({ message: 'Erro ao salvar o arquivo da chave do chat.' });
+    }
+    res.status(200).json({ message: 'Chave do chat salva e criptografada com sucesso!' });
+  });
+});
+
+// Rota para OBTER (ler e descriptografar) a chave do Chat
+router.get('/get-chat-key', (req, res) => {
+  fs.readFile(chatIaPath, 'utf8', (err, encryptedKey) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        return res.status(404).json({ message: 'Arquivo da chave do chat não encontrado.' });
+      }
+      return res.status(500).json({ message: 'Erro ao ler o arquivo da chave do chat.' });
+    }
+
+    const decryptedKey = decrypt(encryptedKey.trim());
+    
+    if (!decryptedKey) {
+        return res.status(500).json({ message: 'Falha ao descriptografar a chave. Verifique a SECRET_KEY ou a integridade do arquivo.' });
+    }
+    
+    res.status(200).json({ key: decryptedKey });
+  });
+});
+
+
+// Rota para DEFINIR (criptografar e salvar) a chave de Imagem
+router.get('/set-img-key', (req, res) => {
+  const { key } = req.query;
+  if (!key) {
+    return res.status(400).json({ message: 'A chave é obrigatória. Use o parâmetro ?key=SUA_CHAVE' });
+  }
+
+  const encryptedKey = encrypt(key);
+  
+  fs.writeFile(imgIaPath, encryptedKey, 'utf8', (err) => {
+    if (err) {
+      return res.status(500).json({ message: 'Erro ao salvar o arquivo da chave de imagem.' });
+    }
+    res.status(200).json({ message: 'Chave de imagem salva e criptografada com sucesso!' });
+  });
+});
+
+// Rota para OBTER (ler e descriptografar) a chave de Imagem
+router.get('/get-img-key', (req, res) => {
+  fs.readFile(imgIaPath, 'utf8', (err, encryptedKey) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        return res.status(404).json({ message: 'Arquivo da chave de imagem não encontrado.' });
+      }
+      return res.status(500).json({ message: 'Erro ao ler o arquivo da chave de imagem.' });
+    }
+
+    const decryptedKey = decrypt(encryptedKey.trim());
+
+    if (!decryptedKey) {
+        return res.status(500).json({ message: 'Falha ao descriptografar a chave. Verifique a SECRET_KEY ou a integridade do arquivo.' });
+    }
+
+    res.status(200).json({ key: decryptedKey });
+  });
+});
+
 
 module.exports = router;
