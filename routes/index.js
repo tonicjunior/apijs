@@ -5,7 +5,7 @@ const crypto = require('crypto'); // Módulo de criptografia
 const router = express.Router();
 
 // --- CONFIGURAÇÃO DE CRIPTOGRAFIA ---
-const SECRET_KEY = 'e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0'; // Use esta chave para ambas as operações
+const SECRET_KEY = 'e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0e8b2a7e4b1c9d8f3a7b6c5d4e3f2a1b0'; 
 const ALGORITHM = 'aes-256-gcm';
 
 // --- CAMINHOS PARA OS ARQUIVOS ---
